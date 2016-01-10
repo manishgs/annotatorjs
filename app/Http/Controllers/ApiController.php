@@ -26,16 +26,18 @@ class ApiController extends BaseController {
     {
         $data = json_decode($request->getContent(), true);
         $annotation = [
-            'ranges' => $data['ranges'],
-            'quote'  => $data['quote'],
-            'text'   => $data['text'],
-            'page_id'   => $request->get('page')
+            'ranges'  => $data['ranges'],
+            'quote'   => $data['quote'],
+            'text'    => $data['text'],
+            'page_id' => $data['page']
         ];
 
-        if($id = Annotation::create($annotation)) {
-            return response()->json(['status' => 'success', 'id' => $id]);
-        } else {
-            return response()->json(['status' => 'error']);
+        try {
+            $annotation = Annotation::create($annotation);
+
+            return response()->json(['status' => 'success', 'id' => $annotation->id]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 400);
         }
     }
 
@@ -52,14 +54,20 @@ class ApiController extends BaseController {
             $annotation->ranges = $data['ranges'];
             $annotation->quote = $data['quote'];
             $annotation->text = $data['text'];
-            $annotation->page_id = $data['page_id'];
+            $annotation->page_id = $data['page'];
 
-            if($annotation->save()) {
+            try {
+                $annotation->save();
+
                 return response()->json(['status' => 'success']);
+            } catch (\Exception $e) {
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 400);
             }
+
         }
 
-        return response()->json(['status' => 'error']);
+        return response()->json(['status' => 'error', 'message' => 'Could not find the annotation.'], 400);
+
     }
 
     /**
@@ -68,10 +76,14 @@ class ApiController extends BaseController {
      */
     public function delete($id)
     {
-        if(Annotation::destroy($id)) {
-            return response()->json(['status' => 'error']);
+        try {
+            if(Annotation::destroy($id)) {
+                return response('', 204);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 400);
         }
 
-        return response()->json(['status' => 'success']);
+        return response()->json(['status' => 'error', 'message' => 'Could not find the annotation.'], 400);
     }
 }
